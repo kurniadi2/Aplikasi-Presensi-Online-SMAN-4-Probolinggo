@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Presensi Online - SMAN 4 Probolinggo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <!-- Login Modal -->
+    <div id="loginModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div class="text-center mb-6">
+                <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/191f0b48-0519-4f76-98c6-34970436589b.png" alt="Logo resmi SMAN 4 Probolinggo dengan desain modern dan elegan" class="mx-auto mb-4 rounded-full border-4 border-blue-200" />
+                <h1 class="text-2xl font-bold text-gray-800">SMAN 4 PROBOLINGGO</h1>
+                <p class="text-gray-600">Sistem Presensi Online Guru</p>
+            </div>
+            
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Nama Guru</label>
+                    <select id="teacherSelect" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Pilih Nama Guru</option>
+                        <option value="Anthony Kurniadi">Anthony Kurniadi</option>
+                        <option value="Andri Subekti">Andri Subekti</option>
+                        <option value="Bambang Agung">Bambang Agung</option>
+                        <option value="Tito Januar">Tito Januar</option>
+                        <option value="Saleh">Saleh</option>
+                        <option value="custom">Tulis Nama Lain</option>
+                    </select>
+                    <input type="text" id="customName" placeholder="Masukkan nama lengkap" class="w-full px-3 py-2 border border-gray-300 rounded-md mt-2 hidden focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Password</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan password">
+                </div>
+                
+                <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200">
+                    Masuk
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Header -->
+        <header class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-4">
+                        <img src="https://storage.googleapis.com/workspace-0f70711f-8b4e-4d94-86f1-2a93ccde5887/image/a6249bc7-6b44-40c6-9ebf-b752cfe78832.png" alt="Logo kecil SMAN 4 Probolinggo dengan ikon pendidikan" class="w-10 h-10 rounded" />
+                        <div>
+                            <h1 class="text-xl font-bold text-gray-800">SMAN 4 PROBOLINGGO</h1>
+                            <p class="text-sm text-gray-600">Sistem Presensi Guru</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p id="currentDateTime" class="text-sm text-gray-600"></p>
+                        <p id="currentTeacher" class="font-medium text-gray-800"></p>
+                        <button onclick="logout()" class="text-red-600 text-sm hover:text-red-800">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Status Card -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-lg font-semibold text-gray-800">Status Presensi Hari Ini</h2>
+                    <span id="attendanceStatus" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm">Belum Presensi</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">Jam Masuk</p>
+                        <p id="checkInTime" class="font-medium">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">Jam Pulang</p>
+                        <p id="checkOutTime" class="font-medium">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Attendance Form -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Presensi Online</h2>
+                
+                <div class="mb-4 p-4 bg-blue-50 rounded-lg">
+                    <p class="text-sm text-blue-800">
+                        <strong>Ketentuan Presensi:</strong><br>
+                        • Masuk: 06:00 - 07:00 WIB<br>
+                        • Pulang: 15:00 - 22:00 WIB<br>
+                        • Maksimal jarak: 3km dari sekolah
+                    </p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Jenis Presensi</label>
+                        <select id="attendanceType" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="masuk">Presensi Masuk</option>
+                            <option value="pulang">Presensi Pulang</option>
+                        </select>
+                    </div>
+
+                    <div id="locationStatus" class="p-3 bg-yellow-50 border border-yellow-200 rounded-md hidden">
+                        <div class="flex items-center">
+                            <div class="loader mr-2"></div>
+                            <span class="text-yellow-800">Mendeteksi lokasi...</span>
+                        </div>
+                    </div>
+
+                    <button onclick="getLocation()" class="w-full bg-green-600 text-white py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200">
+                        Deteksi Lokasi & Presensi
+                    </button>
+                </div>
+            </div>
+
+            <!-- Attendance History -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-lg font-semibold text-gray-800 mb-4">Riwayat Presensi</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left text-gray-700">
+                        <thead class="bg-gray-100 text-gray-700">
+                            <tr>
+                                <th class="px-4 py-2">Tanggal</th>
+                                <th class="px-4 py-2">Masuk</th>
+                                <th class="px-4 py-2">Pulang</th>
+                                <th class="px-4 py-2">Status</th>
+                                <th class="px-4 py-2">Jarak</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceHistory">
+                            <tr>
+                                <td colspan="5" class="px-4 py-4 text-center text-gray-500">Belum ada riwayat presensi</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Notification Modal -->
+    <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+            <div id="notificationIcon" class="text-center text-4xl mb-4">✅</div>
+            <h2 id="notificationTitle" class="text-xl font-bold text-center mb-4"></h2>
+            <p id="notificationMessage" class="text-gray-600 text-center mb-6"></p>
+            <button onclick="hideNotification()" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700">
+                Tutup
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // School coordinates (SMAN 4 Probolinggo)
+        const SCHOOL_LAT = -7.7545;
+        const SCHOOL_LON = 113.2155;
+        const MAX_DISTANCE_KM = 3;
+        
+        let currentTeacher = '';
+        let currentLocation = null;
+
+        // DOM Elements
+        const teacherSelect = document.getElementById('teacherSelect');
+        const customName = document.getElementById('customName');
+        const loginForm = document.getElementById('loginForm');
+        const loginModal = document.getElementById('loginModal');
+        const mainApp = document.getElementById('mainApp');
+        const currentDateTime = document.getElementById('currentDateTime');
+        const currentTeacherElem = document.getElementById('currentTeacher');
+        const attendanceStatus = document.getElementById('attendanceStatus');
+        const checkInTime = document.getElementById('checkInTime');
+        const checkOutTime = document.getElementById('checkOutTime');
+        const locationStatus = document.getElementById('locationStatus');
+        const attendanceHistory = document.getElementById('attendanceHistory');
+        const notificationModal = document.getElementById('notificationModal');
+        const notificationTitle = document.getElementById('notificationTitle');
+        const notificationMessage = document.getElementById('notificationMessage');
+
+        // Event Listeners
+        teacherSelect.addEventListener('change', function() {
+            customName.classList.toggle('hidden', this.value !== 'custom');
+        });
+
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const teacherName = teacherSelect.value === 'custom' ? customName.value : teacherSelect.value;
+            const password = document.getElementById('password').value;
+
+            if (!teacherName || !password) {
+                showNotification('Error', 'Harap isi semua field dengan benar');
+                return;
+            }
+
+            if (password !== 'admin') {
+                showNotification('Error', 'Password salah');
+                return;
+            }
+
+            currentTeacher = teacherName;
+            loginModal.classList.add('hidden');
+            mainApp.classList.remove('hidden');
+            currentTeacherElem.textContent = teacherName;
+            updateDateTime();
+            loadAttendanceHistory();
+            setInterval(updateDateTime, 1000);
+        });
+
+        // Functions
+        function updateDateTime() {
+            const now = new Date();
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            };
+            currentDateTime.textContent = now.toLocaleDateString('id-ID', options);
+        }
+
+        function getLocation() {
+            locationStatus.classList.remove('hidden');
+            
+            if (!navigator.geolocation) {
+                showNotification('Error', 'Geolocation tidak didukung oleh browser Anda');
+                locationStatus.classList.add('hidden');
+                return;
+            }
+
+            navigator.geolocation.getCurrentPosition(
+                function(position) {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lon: position.coords.longitude
+                    };
+                    
+                    const distance = calculateDistance(
+                        currentLocation.lat, currentLocation.lon,
+                        SCHOOL_LAT, SCHOOL_LON
+                    );
+                    
+                    if (distance > MAX_DISTANCE_KM) {
+                        showNotification(
+                            'Lokasi Tidak Valid', 
+                            `Anda berada ${distance.toFixed(2)}km dari sekolah. Maksimal jarak presensi adalah ${MAX_DISTANCE_KM}km.`
+                        );
+                        locationStatus.classList.add('hidden');
+                        return;
+                    }
+
+                    processAttendance(distance);
+                },
+                function(error) {
+                    let errorMessage = 'Gagal mendapatkan lokasi';
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Akses lokasi ditolak';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Informasi lokasi tidak tersedia';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Waktu permintaan lokasi habis';
+                            break;
+                    }
+                    showNotification('Error', errorMessage);
+                    locationStatus.classList.add('hidden');
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                }
+            );
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Earth's radius in kilometers
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function processAttendance(distance) {
+            const now = new Date();
+            const type = document.getElementById('attendanceType').value;
+            const time = now.toLocaleTimeString('id-ID');
+            const date = now.toLocaleDateString('id-ID');
+            
+            let status = 'Normal';
+            let message = '';
+
+            if (type === 'masuk') {
+                const hour = now.getHours();
+                if (hour < 6) {
+                    status = 'Terlalu Cepat';
+                    message = 'Presensi masuk dilakukan sebelum jam 06:00';
+                } else if (hour >= 7) {
+                    status = 'Terlambat';
+                    message = 'Presensi masuk dilakukan setelah jam 07:00';
+                }
+                checkInTime.textContent = time;
+            } else {
+                const hour = now.getHours();
+                if (hour < 15) {
+                    status = 'Terlalu Cepat';
+                    message = 'Presensi pulang dilakukan sebelum jam 15:00';
+                } else if (hour >= 22) {
+                    status = 'Terlambat';
+                    message = 'Presensi pulang dilakukan setelah jam 22:00';
+                }
+                checkOutTime.textContent = time;
+            }
+
+            // Save to localStorage
+            const attendanceData = {
+                teacher: currentTeacher,
+                type: type,
+                date: date,
+                time: time,
+                status: status,
+                distance: distance.toFixed(2),
+                timestamp: now.getTime()
+            };
+
+            saveAttendance(attendanceData);
+            updateAttendanceStatus();
+            loadAttendanceHistory();
+            
+            showNotification(
+                'Presensi Berhasil',
+                `${message || 'Presensi berhasil dicatat'}\nJarak: ${distance.toFixed(2)}km dari sekolah`
+            );
+            
+            locationStatus.classList.add('hidden');
+        }
+
+        function saveAttendance(data) {
+            let attendanceRecords = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            
+            // Check if there's already an entry for this date and type
+            const existingIndex = attendanceRecords.findIndex(record => 
+                record.teacher === data.teacher && 
+                record.date === data.date && 
+                record.type === data.type
+            );
+            
+            if (existingIndex !== -1) {
+                attendanceRecords[existingIndex] = data;
+            } else {
+                attendanceRecords.push(data);
+            }
+            
+            localStorage.setItem('attendanceRecords', JSON.stringify(attendanceRecords));
+        }
+
+        function loadAttendanceHistory() {
+            const records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            const teacherRecords = records.filter(record => record.teacher === currentTeacher);
+            
+            if (teacherRecords.length === 0) {
+                attendanceHistory.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="px-4 py-4 text-center text-gray-500">Belum ada riwayat presensi</td>
+                    </tr>
+                `;
+                return;
+            }
+            
+            // Sort by timestamp descending
+            teacherRecords.sort((a, b) => b.timestamp - a.timestamp);
+            
+            let html = '';
+            teacherRecords.forEach(record => {
+                const statusClass = record.status === 'Normal' ? 'bg-green-100 text-green-800' : 
+                                  record.status.includes('Terlambat') ? 'bg-red-100 text-red-800' : 
+                                  'bg-yellow-100 text-yellow-800';
+                
+                html += `
+                    <tr class="border-b border-gray-200">
+                        <td class="px-4 py-3">${record.date}</td>
+                        <td class="px-4 py-3">${record.type === 'masuk' ? record.time : '-'}</td>
+                        <td class="px-4 py-3">${record.type === 'pulang' ? record.time : '-'}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs ${statusClass}">${record.status}</span>
+                        </td>
+                        <td class="px-4 py-3">${record.distance} km</td>
+                    </tr>
+                `;
+            });
+            
+            attendanceHistory.innerHTML = html;
+            updateAttendanceStatus();
+        }
+
+        function updateAttendanceStatus() {
+            const today = new Date().toLocaleDateString('id-ID');
+            const records = JSON.parse(localStorage.getItem('attendanceRecords') || '[]');
+            const todayRecords = records.filter(record => 
+                record.teacher === currentTeacher && record.date === today
+            );
+            
+            const checkInRecord = todayRecords.find(record => record.type === 'masuk');
+            const checkOutRecord = todayRecords.find(record => record.type === 'pulang');
+            
+            checkInTime.textContent = checkInRecord ? checkInRecord.time : '-';
+            checkOutTime.textContent = checkOutRecord ? checkOutRecord.time : '-';
+            
+            if (checkInRecord && checkOutRecord) {
+                attendanceStatus.textContent = 'Lengkap';
+                attendanceStatus.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm';
+            } else if (checkInRecord) {
+                attendanceStatus.textContent = 'Sudah Masuk';
+                attendanceStatus.className = 'px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm';
+            } else {
+                attendanceStatus.textContent = 'Belum Presensi';
+                attendanceStatus.className = 'px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-sm';
+            }
+        }
+
+        function showNotification(title, message) {
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            notificationModal.classList.remove('hidden');
+        }
+
+        function hideNotification() {
+            notificationModal.classList.add('hidden');
+        }
+
+        function logout() {
+            currentTeacher = '';
+            loginModal.classList.remove('hidden');
+            mainApp.classList.add('hidden');
+            teacherSelect.value = '';
+            customName.value = '';
+            customName.classList.add('hidden');
+            document.getElementById('password').value = '';
+        }
+
+        // Initialize
+        updateDateTime();
+    </script>
+</body>
+</html>
+
